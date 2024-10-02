@@ -51,5 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# Add addtional ignore list
 Debug/
 .vs/
