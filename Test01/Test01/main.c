@@ -11,8 +11,10 @@
 int main(void)
 {
     /* Replace with your application code */
+	printf("Hello World!");
     while (1) 
     {
+		
     }
 }
 
