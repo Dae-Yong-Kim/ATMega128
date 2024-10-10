@@ -35,7 +35,7 @@ int AjustSpeed(int* numOfDelay)
 int main(void)
 {
     /* Replace with your application code */
-	//printf("Hello World!");
+	// 포트를 정의할 때는 16진수를 사용하라 이게 표준이다.
 	DDRG |= 0x10; // Data Direction Register G | 4번 (0~4) | xxxx xxxx ==> xxx1 xxxx | 0=입력 1=출력 | G4번 핀을 출력으로 만들었다.
 	DDRG &= ~0x0e; // Data Direction Register G | 3번 (0~4) | xxxx xxxx ==> xxxx 000x | 0=입력 1=출력 | G3번 핀을 입력으로 만들었다. | 계산 귀찮으니 ~ 연산 사용
 	//DDG4 = 1; // bit에 직접 접근, but Const (상수) = Read Only ==> 0x10 = 1과 같다. (Error)
