@@ -5,7 +5,7 @@ ATMega128 applications
 ### Test 01
 LED On using G4 Port
 ```
-#define F_CPU 16000000UL // 16MHz | delay 사용시 필요
+#define F_CPU 16000000UL // 16MHz | 반드시 넣어주자 안넣으면 default로 1G로 문제가 생김
 #include <avr/io.h>
 #include <util/delay.h>// delay 사용시 필요
 //  SW : PG3, Input
