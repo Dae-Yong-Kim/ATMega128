@@ -111,7 +111,7 @@ int main(void)
 	PORTG |= 0x0c; // G2, G3 내부 Pull Up
 	
 	// Interrupt 사용 설정
-	EIMSK |= ((1 << SW1) | (1 << SW2)); // (Enabel Interrupt MaSK) 사용할 인터럽트의 마스크를 1로 변경
+	EIMSK |= ((1 << SW1) | (1 << SW2)); // (External Interrupt MaSK) 사용할 인터럽트의 마스크를 1로 변경
 	EICRA |= ((1 << ISC11) | (1 << ISC01)); // (External Interrupt Control Register A) INT0 ~ INT3까지의 컨트롤 방식 설정
 	sei();
 	
