@@ -19,12 +19,17 @@ volatile int ival= 200;
 
 //Interrupt를 통해서 timing 이슈 해결
 ISR(INT0_vect){ // 느리게
-	ival += 500;
+	ival += 100;
 }
 
 ISR(INT1_vect){ // 빠르게
-	ival -= 500;
+	ival -= 100;
 	if (ival < 0) ival = 0;
+}
+
+int TestBit(char pin, char mask) { // PINx 레지스터의 값의 mask bit가 0인지 1인지 판별
+	if((pin & mask) != 0) return 1;
+	return 0;
 }
 
 void StandBy() { // PG4 pin으로 프로그램 시작 스위치 연결
@@ -33,13 +38,8 @@ void StandBy() { // PG4 pin으로 프로그램 시작 스위치 연결
 	
 	// PINx의 초기값은 N/A이다.
 	// 5V가 연결되어 있어도 처음 기기가 켜질 때는 1임을 보장할 수 없다. 따라서 stand-by 전에 PING1이 1임을 확인하고 들어가자
-	while((PING & _BV(SW_STANDBY)) == 0); // == "while((PING & 0X10) == 0);" == "while(1) { if((PING & 0X10) == 1) break; }"
-	while(1) { // stand-by
-		//if(PING1 == 0) { //이런식으로 바로 사용은 불가능하다. (Error)
-		if((PING & _BV(SW_STANDBY)) == 0) { // == "if(PING & 0X10 == 0) {" == "if((PING & (1 << SW_STANDBY)) == 0) {"
-			break;
-		}
-	}
+	while(!TestBit(PING, 0x10)); // == "while((PING & _BV(SW_STANDBY)) == 0);" == "while((PING & 0X10) == 0);" == "while(1) { if((PING & 0X10) != 0) break; }" == "while(1) { if((PING & 0X10) == 0x10) break; }"
+	while(TestBit(PING, 0x10)); // == "while(!((PING & _BV(SW_STANDBY)) == 0));" == "while(!((PING & 0X10) == 0));" == "while(!((PING & (1 << SW_STANDBY)) == 0));" == "while(1) { if(PING & 0X10 == 0) break; }"
 }
 
 int main(void)
@@ -52,8 +52,10 @@ int main(void)
 	PORTG |= 0x0c; // G2, G3 내부 Pull Up
 	
 	// Interrupt 사용 설정
-	EIMSK |= ((1 << SW1) | (1 << SW2)); // (Enabel Interrupt MaSK) 사용할 인터럽트의 마스크를 1로 변경
-	EICRA |= ((1 << ISC11) | (1 << ISC01)); // (External Interrupt Control Register A) INT0 ~ INT3까지의 컨트롤 방식 설정
+	EIMSK |= ((1 << INT0) | (1 << INT1)); // (External Interrupt MaSK) 사용할 인터럽트의 마스크를 1로 변경
+	//EICRA |= ((1 << ISC11) | (1 << ISC01));
+	//EICRA &= ~((1 << ISC10) | (1 << ISC00)); // (External Interrupt Control Register A) INT0 ~ INT3까지의 컨트롤 방식 설정
+	EICRA = (EICRA & ~((1 << ISC10) | (1 << ISC00))) | ((1 << ISC11) | (1 << ISC01));
 	sei();
 	
 	//PORTG |= Ox10; // LED On
