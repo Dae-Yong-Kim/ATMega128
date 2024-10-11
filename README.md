@@ -92,7 +92,7 @@ void StandBy() { // PG4 pin으로 프로그램 시작 스위치 연결
 	
 	// PINx의 초기값은 N/A이다.
 	// 5V가 연결되어 있어도 처음 기기가 켜질 때는 1임을 보장할 수 없다. 따라서 stand-by 전에 PING1이 1임을 확인하고 들어가자
-	while((PING & _BV(SW_STANDBY)) == 0); // == "while((PING & 0X10) == 0);" == "while(1) { if((PING & 0X10) == 0x10) break; }"
+	while((PING & _BV(SW_STANDBY)) == 0); // == "while((PING & 0X10) == 0);" == "while(1) { if((PING & 0X10) != 0) break; }" == "while(1) { if((PING & 0X10) == 0x10) break; }"
 	while(1) { // stand-by
 		//if(PING1 == 0) { //이런식으로 바로 사용은 불가능하다. (Error)
 		if((PING & _BV(SW_STANDBY)) == 0) { // == "if(PING & 0X10 == 0) {" == "if((PING & (1 << SW_STANDBY)) == 0) {"
