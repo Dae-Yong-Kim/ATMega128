@@ -29,11 +29,11 @@ ISR(TIMER0_OVF_vect) { // Timer Overflow Interrupter
 	}
 }
 
-ISR(INT0_vect) {
+ISR(INT0_vect) { //100ms 느리게 flash
 	standard += 6;
 }
 
-ISR(INT1_vect) {
+ISR(INT1_vect) { //100ms 빠르게 flash
 	standard -= 6;
 	if(standard < 0) {
 		standard = 0;
