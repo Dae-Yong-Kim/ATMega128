@@ -11,7 +11,7 @@ LED On using G4 Port
  * Created: 2024-10-02 오후 12:17:19
  * Author : user
  */ 
-#define F_CPU 16000000UL // 16MHz | 반드시 넣어주자 안넣으면 default로 1G로 문제가 생김
+#define F_CPU 16000000UL // 16MHz | 반드시 넣어주자 안넣으면 default로 1M로 문제가 생김
 #include <avr/io.h>
 #include <util/delay.h> // delay를 사용하기 위해서는 넣어줘라
 //  SW : PG3, Input
