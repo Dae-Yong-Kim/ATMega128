@@ -210,3 +210,89 @@ int main(void)
     }
 }
 ```
+### Test04-Timer16
+```
+#define F_CPU 16000000UL // 없어도 된다 이게 꼭 필요한 경우는 delay를 사용하는 경우
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+#define DDR DDRG
+#define PORT PORTG
+#define LEDG PORTG1
+#define LEDY PORTG2
+#define LEDR PORTG3
+
+volatile int st_1 = 0, st_3 = 0;
+
+ISR(TIMER1_OVF_vect) {
+	if (st_1) {	PORT &= ~(1 << LEDY); st_1 = 0;	}
+	else {	PORT |= (1 << LEDY); st_1 = 1;	}
+}
+
+ISR(TIMER3_OVF_vect) {
+	if (st_3) {	PORT &= ~(1 << LEDR); st_3 = 0;	}
+	else {	PORT |= (1 << LEDR); st_3 = 1;	}
+}
+
+int main(void)
+{
+	DDR |= ((1 << LEDG) | (1 << LEDY) | (1 << LEDR));
+	
+	PORT |= ((1 << LEDG) | (1 << LEDY) | (1 << LEDR));
+	StandBy();
+	PORT &= ~((1 << LEDG) | (1 << LEDY) | (1 << LEDR));
+    /* Replace with your application code */
+	
+	TIMSK |= (1 << TOIE1); // 1번 Timer(16bit) 사용
+	ETIMSK |= (1 << TOIE3); // 3번 Timer(16bit) 사용
+	TCCR1B |= ((1 << CS10) | (1 << CS11)); // 분주비 64 => OVF 인터럽트 주기: (1/16M) * (분주비) * 65536(0~65535) (~250ms)
+	TCCR3B |= ((1 << CS30) | (1 << CS31)); // 분주비 64 => OVF 인터럽트 주기: (1/16M) * (분주비) * 65536(0~65535) (~250ms)
+	sei();
+	
+    while (1) 
+    {
+    }
+}
+```
+### Test05-FND
+```
+#define F_CPU 16000000UL
+
+#include <avr/io.h>
+#include <util/delay.h>
+
+#define IDDR    DDRA
+#define IPORT   PORTA
+#define CDDR    DDRB
+#define CPORT   PORTB
+
+unsigned char img[] = { 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x27, 0x7F, 0x67 };
+int deciDigit = 456;
+char data[4];
+
+int main(void)
+{
+	StandBy();
+	CDDR |= 0x0F;
+	IDDR |= 0xFF;
+	
+	CPORT = 0x0F; // 모든 자리수 선택
+	IPORT = ~0xFF; // 전체 세그먼트 ON ---> [8]
+	
+	data[3] = deciDigit % 10;
+	data[2] = (deciDigit / 10) % 10;
+	data[1] = (deciDigit / 100) % 10;
+	data[0] = deciDigit / 1000;
+	
+	
+    /* Replace with your application code */
+    while (1) 
+    {
+		for (int i = 0; i < sizeof(data); i++) { // 4자리 숫자 처리
+			CPORT = 1 << i;
+			IPORT = ~img[data[i]];
+			_delay_ms(1);
+		}
+	}
+```
