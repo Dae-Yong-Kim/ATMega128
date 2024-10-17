@@ -15,11 +15,11 @@
 #define CDDR    DDRB
 #define CPORT   PORTB
 
-unsigned char img[] = { 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x27, 0x7F, 0x67 };
+unsigned char img[] = { 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x27, 0x7F, 0x67 }; // 0~9까지의 이미지
 char data[4];
 int num = 0, st = 0, cnt = 0; // st == 0: reset | 1: start | 2 : stop
 
-ISR(INT0_vect) {
+ISR(INT0_vect) { // Control 버튼
 	switch(st) {
 		case 0:	st = 1; break;
 		case 1:	st = 2; break;
@@ -40,13 +40,14 @@ ISR(TIMER0_COMP_vect) { // Timer용 ((0.01 / 7)s 단위)
 }
 
 int tcnt = 0;
+
 ISR(TIMER2_OVF_vect) { // FND refresh (4ms 단위)
-	if(tcnt++ < 1) {
-		for (int i = 0; i < 4; i++) {
+	if(tcnt++ < 1) { // 인터럽트 여러개 생성되는 것 막아줌
+		for (int i = 0; i < 4; i++) { // 4자리 출력
 #ifdef FND_TYPE_CATHOD
 			CPORT = ~(1 << i);
 			IPORT = img[data[i]];
-			if (i == 1) {
+			if (i == 1) { // 소수점 출력
 				IPORT |= 0x80;
 			}
 #else
