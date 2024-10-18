@@ -20,28 +20,35 @@
 
 unsigned char img[] = { 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x27, 0x7F, 0x67 }; // 0~9까지의 이미지
 char stopwatch_data[4], clock_data[4], timer_data[4];
-volatile int stopwatch_num = 0, clock_num = 0, timer_num = 0, stopwatch_st = 0, clock_st = 0, timer_st = 0, mode = 0, tcnt = 0; // st == 0: reset | 1: start | 2 : stop
+volatile int stopwatch_num = 0, clock_num = 0, timer_num = 0, stopwatch_st = 0, clock_st = 0, timer_st = 0, clock_cnt = 0, stopwatch_cnt = 0, timer_cnt = 0, mode = 0, tcnt = 0; // st == 0: reset | 1: start | 2 : stop
 
 ISR(INT0_vect) { // Control 모드 버튼
 	switch(mode){
 		case 0: // Clock
 			switch(clock_st) { // Clock: Default 모드, 시간 설정 모드 변경
 				case 0: clock_st++; break; // default Clock
-				case 1: clock_st--; break; // min 수정
+				case 1: clock_st++; break; // min 수정
+				case 2: clock_st = 0; break; // sec 수정
 			}
+			if(timer_st == 4) {	GPORT &= ~(1 << BUZZER); timer_st = 0;	}
 			break;
 		case 1: // Stopt-Watch
 			switch(stopwatch_st) {
 				case 0: stopwatch_st++; break; // stop
 				case 1: stopwatch_st--; break; // start
 			}
+			if(timer_st == 4) {	GPORT &= ~(1 << BUZZER); timer_st = 0;	}
 			break;
 		case 2: // Timer
 			switch(timer_st) {
-				case 0: if(timer_num > 0) timer_st++; break; // 시간 세팅
-				case 1: timer_st++; break; // Timer 작동
-				case 2: if(timer_num > 0) timer_st--; break; // Timer 정지
-				case 3: GPORT &= ~(1 << BUZZER); timer_st = 0; break; // Buzzer
+				case 0: timer_st++; break; // min 세팅
+				case 1: // sec 세팅
+					if(timer_num > 0) timer_st++;
+					else timer_st--;
+					break;
+				case 2: timer_st++; break; // Timer 작동
+				case 3: if(timer_num > 0) timer_st--; break; // Timer 정지
+				case 4: GPORT &= ~(1 << BUZZER); timer_st = 0; break; // Buzzer
 			}
 			break;
 	}
@@ -50,9 +57,15 @@ ISR(INT0_vect) { // Control 모드 버튼
 ISR(INT1_vect) { // Start Stop + 시간 설정 버튼
 	switch(mode) {
 		case 0: // Clock 모드
-			if(clock_st == 1) {
-				clock_num += 60;
-				clock_digit(clock_num);
+			switch(clock_st) {
+				case 1: // min 수정
+					clock_num += 60;
+					clock_digit(clock_num);
+					break;
+				case 2: // sec 수정
+					clock_num += 1;
+					clock_digit(clock_num);
+					break;
 			}
 			break;
 		case 1: // Stop-Watch 모드
@@ -62,8 +75,12 @@ ISR(INT1_vect) { // Start Stop + 시간 설정 버튼
 			}
 			break;
 		case 2:
-			if(timer_st == 0) {
-				timer_num += 10;
+			if(timer_st == 0) { // min 수정
+				timer_num += 60;
+				timer_digit(timer_num);
+			}
+			if(timer_st == 1) { // sec 수정
+				timer_num += 1;
 				timer_digit(timer_num);
 			}
 			 break; // Timer 모드
@@ -78,20 +95,26 @@ ISR(INT2_vect) { // Mode 설정
 	}
 }
 
-ISR(TIMER0_COMP_vect) { // Stop-Watch Timer 0.01s 단위
+ISR(TIMER1_COMPA_vect) { // Clock & Timer Timer (1s 단위)
+	switch(clock_st) {
+		case 0:
+			if(clock_num > 3599) {
+				clock_num = 0;
+				clock_digit(clock_num);
+				} else {
+				clock_num++;
+				clock_digit(clock_num);
+			}
+	}
+	
 	switch(stopwatch_st) {
 		case 0: break; // stop
 		case 1:	stopwatch_num++; stopwatch_digit(stopwatch_num); break; // start
 	}
-	TCNT0 = 0;
-}
-
-ISR(TIMER1_COMPA_vect) { // Clock & Timer Timer (1s 단위)
-	clock_num++;
-	clock_digit(clock_num);
-	if(timer_st == 1) { // Timer 작동 중
+	
+	if(timer_st == 2) { // Timer 작동 중
 		if(timer_num > 0) {	timer_num--; timer_digit(timer_num);	}
-		else {	GPORT |= (1 << BUZZER); timer_st = 3;	}
+		else {	GPORT |= (1 << BUZZER); timer_st = 4;	}
 	}
 	TCNT1 = 0;
 }
@@ -99,11 +122,63 @@ ISR(TIMER1_COMPA_vect) { // Clock & Timer Timer (1s 단위)
 ISR(TIMER2_OVF_vect) { // FND refresh (4ms 단위)
 	if(tcnt++ < 1) { // 인터럽트 여러개 생성되는 것 막아줌
 		for (int i = 0; i < 4; i++) { // 4자리 출력
+			clock_cnt++;
+			timer_cnt++;
 			CPORT = 1 << i;
 			switch(mode) {
-				case 0:	IPORT = ~img[clock_data[i]]; break;
-				case 1: IPORT = ~img[stopwatch_data[i]]; break;
-				case 2: IPORT = ~img[timer_data[i]]; break;
+				case 0:
+					switch(clock_st) {
+						case 0:	IPORT = ~img[clock_data[i]]; break;
+						case 1:
+							if(i > 1) {
+								IPORT = ~img[clock_data[i]];
+							}
+							else if(clock_cnt > 0) {
+								IPORT = ~img[clock_data[i]];
+								if(clock_cnt > 300) clock_cnt = -300;
+							}
+							else if(clock_cnt <= 0) IPORT = 0xFF;
+							break;
+						case 2:
+							if(i < 2) {
+								IPORT = ~img[clock_data[i]];
+							}
+							else if(clock_cnt > 0) {
+								IPORT = ~img[clock_data[i]];
+								if(clock_cnt > 300) clock_cnt = -300;
+							}
+							else if(clock_cnt <= 0) IPORT = 0xFF;
+							break;
+					}
+					break;
+				case 1:
+					IPORT = ~img[stopwatch_data[i]];
+					break;
+				case 2:
+					switch(timer_st) {
+						case 0:
+						if(i > 1) {
+							IPORT = ~img[timer_data[i]];
+						}
+						else if(timer_cnt > 0) {
+							IPORT = ~img[timer_data[i]];
+							if(timer_cnt > 300) timer_cnt = -300;
+						}
+						else if(timer_cnt <= 0) IPORT = 0xFF;
+						break;
+						case 1:
+						if(i < 2) {
+							IPORT = ~img[timer_data[i]];
+						}
+						else if(timer_cnt > 0) {
+							IPORT = ~img[timer_data[i]];
+							if(timer_cnt > 300) timer_cnt = -300;
+						}
+						else if(timer_cnt <= 0) IPORT = 0xFF;
+						break;
+						default: IPORT = ~img[timer_data[i]]; break;
+					}
+					break;
 			}
 			if (i == 1) {	IPORT &= ~0x80;	}
 			_delay_ms(1);
@@ -113,7 +188,7 @@ ISR(TIMER2_OVF_vect) { // FND refresh (4ms 단위)
 }
 
 int clock_digit(int clock_num) { // stopwatch_num 변수의 각자리수 추출하여 clock_data[] 배열에 저장
-	if(clock_num > 2599) return 0; // 인수 유효성 Check
+	if(clock_num > 3599) {	clock_num = 3599; return 0;	} // 인수 유효성 Check
 	// clock_data[0] = (stopwatch_num / 1000) % 10;
 	int min_num = clock_num / 60;
 	int sec_num = clock_num % 60;
@@ -125,7 +200,7 @@ int clock_digit(int clock_num) { // stopwatch_num 변수의 각자리수 추출�
 }
 
 int stopwatch_digit(int stopwatch_num) { // stopwatch_num 변수의 각자리수 추출하여 stopwatch_data[] 배열에 저장
-	if(stopwatch_num > 2599) return 0; // 인수 유효성 Check
+	if(stopwatch_num > 3599) {	clock_num = 3599; return 0;	} // 인수 유효성 Check
 	// stopwatch_data[0] = (stopwatch_num / 1000) % 10;
 	int min_num = stopwatch_num / 60;
 	int sec_num = stopwatch_num % 60;
@@ -137,7 +212,7 @@ int stopwatch_digit(int stopwatch_num) { // stopwatch_num 변수의 각자리수
 }
 
 int timer_digit(int timer_num) { // stopwatch_num 변수의 각자리수 추출하여 clock_data[] 배열에 저장
-	if(timer_num > 2599) return 0; // 인수 유효성 Check
+	if(timer_num > 3599) {	clock_num = 3599; return 0;	} // 인수 유효성 Check
 	// clock_data[0] = (stopwatch_num / 1000) % 10;
 	int min_num = timer_num / 60;
 	int sec_num = timer_num % 60;
@@ -163,11 +238,11 @@ int main(void)
 	EIMSK |= ((1 << INT0) | (1 << INT1) | (1 << INT2));
 	EICRA |= ((1 << ISC01) | (1 << ISC11) |(1 << ISC21));
 	//Timer0: 100ms stop-watch, Timer2: FMD refresh
-	TIMSK |= ((1 << OCIE0) | (1 << TOIE2) | (1 << OCIE1A));
-	TCCR0 |= ((1 << CS00) | (1 << CS01) | (1 << CS02)); // 분주비 1024
+	TIMSK |= ((1 << TOIE2) | (1 << OCIE1A));
+	//TCCR0 |= ((1 << CS00) | (1 << CS01) | (1 << CS02)); // 분주비 1024
 	TCCR1B |= (1 << CS12); // 분주비 256 | 
 	TCCR2 |= (1 << CS22); // 분주비 256(100) 1024(101) | (1/16M) * 256 * 256 = 0.004096s
-	OCR0 = 127; // (1/16M) * 154 * 1024 = 0.009856 (~10ms)이지만 실제 시간과 달라서 조금 조정
+	//OCR0 = 127; // (1/16M) * 154 * 1024 = 0.009856 (~10ms)이지만 실제 시간과 달라서 조금 조정
 	OCR1A = 62500; //(1/16M) * 62500 * 256 = 1(s)
 	sei();
 	
