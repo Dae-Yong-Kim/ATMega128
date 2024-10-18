@@ -256,6 +256,7 @@ int main(void)
 }
 ```
 ### Test05-FND
+- 주방 타이머 기능 추가 (확인은 파일에서)
 ```
 #define F_CPU 16000000UL
 
