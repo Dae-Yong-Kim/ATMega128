@@ -125,12 +125,14 @@ int clock_digit(int clock_num) { // stopwatch_num 변수의 각자리수 추출�
 }
 
 int stopwatch_digit(int stopwatch_num) { // stopwatch_num 변수의 각자리수 추출하여 stopwatch_data[] 배열에 저장
-	if(stopwatch_num > 9999) return 0; // 인수 유효성 Check
+	if(stopwatch_num > 2599) return 0; // 인수 유효성 Check
 	// stopwatch_data[0] = (stopwatch_num / 1000) % 10;
-	stopwatch_data[0] = stopwatch_num / 1000;
-	stopwatch_data[1] = (stopwatch_num / 100) % 10;
-	stopwatch_data[2] = (stopwatch_num / 10) % 10;
-	stopwatch_data[3] = stopwatch_num % 10;
+	int min_num = stopwatch_num / 60;
+	int sec_num = stopwatch_num % 60;
+	stopwatch_data[0] = min_num / 10;
+	stopwatch_data[1] = min_num % 10;
+	stopwatch_data[2] = sec_num / 10;
+	stopwatch_data[3] = sec_num % 10;
 	return 1;
 }
 
