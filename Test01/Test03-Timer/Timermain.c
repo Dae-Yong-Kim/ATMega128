@@ -10,9 +10,9 @@
 
 #define DDR DDRG
 #define PORT PORTG
-#define LED0 PORTG1
-#define LED1 PORTG2
-#define LED2 PORTG3
+#define LED_R PORTG0
+#define LED_B PORTG1
+#define LED_Y PORTG2
 
 volatile int cnt = 0, st = 0, standard = 30;
 volatile int ocnt = 0, ost = 0;
