@@ -16,7 +16,7 @@
 #define CPORT   PORTB
 #define GDDR    DDRG
 #define GPORT   PORTG
-#define BUZZER  PORTG0
+#define BUZZER  PORTG3
 
 unsigned char img[] = { 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x27, 0x7F, 0x67 }; // 0~9까지의 이미지
 char stopwatch_data[4], clock_data[4], timer_data[4];
