@@ -94,7 +94,7 @@ int main(void)
     {
 		//PORT |= ((1 << LED_R) | (1 << LED_B));		_delay_ms(period * DutyRate / 100);
 		//PORT &= ~((1 << LED_R) | (1 << LED_B));		_delay_ms(period * (100 - DutyRate) / 100);
-		ICR1 =  song1[i_freq];
+		ICR1 = song1[i_freq];
 		OCR1B = song1[i_freq] / 2;					_delay_ms(495);
 		OCR1B = song1[i_freq] * 2;					_delay_ms(5);
 		i_freq++;
